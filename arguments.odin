@@ -4,7 +4,7 @@ import "core:fmt"
 // import "core:strings"
 
 // odinfmt: disable
-Arguments :: enum {
+Argument_Kind :: enum {
     Invalid,
     Command_Help,               // -h, --help
 	Verbose,                    // -v, --verbose
@@ -16,11 +16,28 @@ Arguments :: enum {
 }
 // odinfmt: enable
 
-contains_arg :: proc(cmd: string, arg: Arguments) -> bool {
+contains_arg :: proc(
+	args: []string,
+	arg: Argument_Kind,
+	log_invalid := true,
+) -> bool {
+	for a in args {
+		actual_value, err := find_arg(a, log_invalid)
+
+		if err == .Unknown_Argument {continue}
+		if actual_value == arg {return true}
+	}
+
 	return false
 }
 
-find_arg :: proc(text: string) -> (arg: Arguments, err: Eitr_Errors) {
+find_arg :: proc(
+	text: string,
+	log_invalid := true,
+) -> (
+	arg: Argument_Kind,
+	err: Eitr_Errors,
+) {
 	if len(text) == 0 {return .Invalid, .Empty_Input}
 
 	switch text {
@@ -40,9 +57,10 @@ find_arg :: proc(text: string) -> (arg: Arguments, err: Eitr_Errors) {
 		return .Profile, .None
 
 	case:
-		fmt.eprintf("[eitr] ERROR: Unknown argument found - %v\n", text)
+		if (log_invalid) {
+			fmt.eprintf("[eitr] ERROR: Unknown argument found - %v\n", text)
+		}
+
 		return .Invalid, .Unknown_Argument
 	}
-
-
 }

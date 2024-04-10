@@ -7,6 +7,10 @@
 		{
 			"name": "vendor",
 			"path": "C:\\programming\\odin\\Odin\\vendor"
+		},
+		{
+			"name": "eitr_tests",
+			"path": "C:\\programming\\odin\\eitr\\tests"
 		}
 	],
 	"enable_document_symbols": true,

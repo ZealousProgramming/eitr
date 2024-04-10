@@ -5,106 +5,218 @@ import "core:testing"
 import "../"
 
 @(test)
-test_commands :: proc(t: ^testing.T) {
-	testing.expect(t, eitr.command_matches("help", eitr.Commands.Help))
-	testing.expect(t, eitr.command_matches("HELP", eitr.Commands.Help))
+test_command_kind :: proc(t: ^testing.T) {
+	testing.expect(t, eitr.command_matches("help", eitr.Command_Kind.Help))
+	testing.expect(t, eitr.command_matches("HELP", eitr.Command_Kind.Help))
 	testing.expect_value(
 		t,
-		eitr.command_matches("halp", eitr.Commands.Help),
+		eitr.command_matches("halp", eitr.Command_Kind.Help),
 		false,
 	)
 	testing.expect_value(
 		t,
-		eitr.command_matches("run", eitr.Commands.Help),
+		eitr.command_matches("run", eitr.Command_Kind.Help),
 		false,
 	)
 
-	testing.expect(t, eitr.command_matches("init", eitr.Commands.Init))
-	testing.expect(t, eitr.command_matches("config", eitr.Commands.Config))
-	testing.expect(t, eitr.command_matches("run", eitr.Commands.Run))
+	testing.expect(t, eitr.command_matches("init", eitr.Command_Kind.Init))
+	testing.expect(t, eitr.command_matches("config", eitr.Command_Kind.Config))
+	testing.expect(t, eitr.command_matches("run", eitr.Command_Kind.Run))
 }
 
 @(test)
-test_arguments :: proc(t: ^testing.T) {
-	// --- Failures
-	invalid_one, io_err := eitr.find_arg("-z")
-	testing.expect(t, invalid_one == eitr.Arguments.Invalid)
-	testing.expect(t, io_err == eitr.Eitr_Errors.Unknown_Argument)
+test_argument_kind :: proc(t: ^testing.T) {
+	MockFindArgs :: struct {
+		arg:           string,
+		expected_kind: eitr.Argument_Kind,
+		err:           eitr.Eitr_Errors,
+	}
 
-	invalid_two, it_err := eitr.find_arg("--zebracakes")
-	testing.expect(t, invalid_two == eitr.Arguments.Invalid)
-	testing.expect(t, it_err == eitr.Eitr_Errors.Unknown_Argument)
+	args := []MockFindArgs {
+		// --- Failures
+		MockFindArgs {
+			arg = "-z",
+			expected_kind = eitr.Argument_Kind.Invalid,
+			err = eitr.Eitr_Errors.Unknown_Argument,
+		},
+		MockFindArgs {
+			arg = "--zebracakes",
+			expected_kind = eitr.Argument_Kind.Invalid,
+			err = eitr.Eitr_Errors.Unknown_Argument,
+		},
+		MockFindArgs {
+			arg = "--h",
+			expected_kind = eitr.Argument_Kind.Invalid,
+			err = eitr.Eitr_Errors.Unknown_Argument,
+		},
+		MockFindArgs {
+			arg = "-verbose",
+			expected_kind = eitr.Argument_Kind.Invalid,
+			err = eitr.Eitr_Errors.Unknown_Argument,
+		},
+		// --- Successes
 
-	invalid_three, ithree_err := eitr.find_arg("--h")
-	testing.expect(t, invalid_three == eitr.Arguments.Invalid)
-	testing.expect(t, ithree_err == eitr.Eitr_Errors.Unknown_Argument)
+		// Help
+		MockFindArgs {
+			arg = "-h",
+			expected_kind = eitr.Argument_Kind.Command_Help,
+			err = eitr.Eitr_Errors.None,
+		},
+		MockFindArgs {
+			arg = "--help",
+			expected_kind = eitr.Argument_Kind.Command_Help,
+			err = eitr.Eitr_Errors.None,
+		},
 
-	invalid_four, if_err := eitr.find_arg("-verbose")
-	testing.expect(t, invalid_four == eitr.Arguments.Invalid)
-	testing.expect(t, if_err == eitr.Eitr_Errors.Unknown_Argument)
+		// Verbose
+		MockFindArgs {
+			arg = "-v",
+			expected_kind = eitr.Argument_Kind.Verbose,
+			err = eitr.Eitr_Errors.None,
+		},
+		MockFindArgs {
+			arg = "--verbose",
+			expected_kind = eitr.Argument_Kind.Verbose,
+			err = eitr.Eitr_Errors.None,
+		},
 
-	// --- Successes
-	// Help
-	valid_help, vho_err := eitr.find_arg("-h")
-	testing.expect(t, valid_help == eitr.Arguments.Command_Help)
-	testing.expect(t, vho_err == eitr.Eitr_Errors.None)
+		// Config
+		MockFindArgs {
+			arg = "-c",
+			expected_kind = eitr.Argument_Kind.Configuration,
+			err = eitr.Eitr_Errors.None,
+		},
+		MockFindArgs {
+			arg = "--config",
+			expected_kind = eitr.Argument_Kind.Configuration,
+			err = eitr.Eitr_Errors.None,
+		},
 
-	valid_help_two, vht_err := eitr.find_arg("--help")
-	testing.expect(t, valid_help_two == eitr.Arguments.Command_Help)
-	testing.expect(t, vht_err == eitr.Eitr_Errors.None)
+		// Output
+		MockFindArgs {
+			arg = "-o",
+			expected_kind = eitr.Argument_Kind.Output,
+			err = eitr.Eitr_Errors.None,
+		},
+		MockFindArgs {
+			arg = "--output",
+			expected_kind = eitr.Argument_Kind.Output,
+			err = eitr.Eitr_Errors.None,
+		},
 
-	// Verbose
-	valid_verbose, vvo_err := eitr.find_arg("-v")
-	testing.expect(t, valid_verbose == eitr.Arguments.Verbose)
-	testing.expect(t, vvo_err == eitr.Eitr_Errors.None)
+		// Set
+		MockFindArgs {
+			arg = "-s",
+			expected_kind = eitr.Argument_Kind.Set,
+			err = eitr.Eitr_Errors.None,
+		},
+		MockFindArgs {
+			arg = "--set",
+			expected_kind = eitr.Argument_Kind.Set,
+			err = eitr.Eitr_Errors.None,
+		},
 
-	valid_verbose_two, vvt_err := eitr.find_arg("--verbose")
-	testing.expect(t, valid_verbose_two == eitr.Arguments.Verbose)
-	testing.expect(t, vvt_err == eitr.Eitr_Errors.None)
+		// Directory
+		MockFindArgs {
+			arg = "-d",
+			expected_kind = eitr.Argument_Kind.Scope_Directory,
+			err = eitr.Eitr_Errors.None,
+		},
+		MockFindArgs {
+			arg = "--directory",
+			expected_kind = eitr.Argument_Kind.Scope_Directory,
+			err = eitr.Eitr_Errors.None,
+		},
 
-	// Config
-	valid_config, vco_err := eitr.find_arg("-c")
-	testing.expect(t, valid_config == eitr.Arguments.Configuration)
-	testing.expect(t, vco_err == eitr.Eitr_Errors.None)
+		// Profile
+		MockFindArgs {
+			arg = "-p",
+			expected_kind = eitr.Argument_Kind.Profile,
+			err = eitr.Eitr_Errors.None,
+		},
+		MockFindArgs {
+			arg = "--profile",
+			expected_kind = eitr.Argument_Kind.Profile,
+			err = eitr.Eitr_Errors.None,
+		},
+	}
 
-	valid_config_two, vct_err := eitr.find_arg("--config")
-	testing.expect(t, valid_config_two == eitr.Arguments.Configuration)
-	testing.expect(t, vct_err == eitr.Eitr_Errors.None)
+	for a in args {
+		actual, err := eitr.find_arg(a.arg)
+		testing.expect(t, actual == a.expected_kind)
+		testing.expect(t, err == a.err)
+	}
+}
 
-	// Output
-	valid_output, voo_err := eitr.find_arg("-o")
-	testing.expect(t, valid_output == eitr.Arguments.Output)
-	testing.expect(t, voo_err == eitr.Eitr_Errors.None)
+@(test)
+test_contains_arg :: proc(t: ^testing.T) {
+	// Verbose Run
+	args_verbose_run := []string{"eitr.exe", "run", "-v"}
+	testing.expect(
+		t,
+		eitr.contains_arg(args_verbose_run, eitr.Argument_Kind.Verbose),
+	)
+}
 
-	valid_output_two, vot_err := eitr.find_arg("--output")
-	testing.expect(t, valid_output_two == eitr.Arguments.Output)
-	testing.expect(t, vot_err == eitr.Eitr_Errors.None)
+@(test)
+test_command_by_name :: proc(t: ^testing.T) {
+	MockCommandByNames :: struct {
+		command:       string,
+		expected_kind: eitr.Command_Kind,
+		err:           eitr.Eitr_Errors,
+	}
 
-	// Set
-	valid_set, vso_err := eitr.find_arg("-s")
-	testing.expect(t, valid_set == eitr.Arguments.Set)
-	testing.expect(t, vso_err == eitr.Eitr_Errors.None)
+	commands := []MockCommandByNames {
+		// Failures
+		MockCommandByNames {
+			command = "build",
+			expected_kind = eitr.Command_Kind.Invalid,
+			err = .Command_Not_Found,
+		},
+		MockCommandByNames {
+			command = "rub",
+			expected_kind = eitr.Command_Kind.Invalid,
+			err = .Command_Not_Found,
+		},
 
-	valid_set_two, vst_err := eitr.find_arg("--set")
-	testing.expect(t, valid_set_two == eitr.Arguments.Set)
-	testing.expect(t, vst_err == eitr.Eitr_Errors.None)
+		// Sucessess
+		MockCommandByNames {
+			command = "RUn",
+			expected_kind = eitr.Command_Kind.Run,
+			err = .None,
+		},
+		MockCommandByNames {
+			command = "config",
+			expected_kind = eitr.Command_Kind.Config,
+			err = .None,
+		},
+		MockCommandByNames {
+			command = "ConfiG",
+			expected_kind = eitr.Command_Kind.Config,
+			err = .None,
+		},
+		MockCommandByNames {
+			command = "help",
+			expected_kind = eitr.Command_Kind.Help,
+			err = .None,
+		},
+		MockCommandByNames {
+			command = "heLP",
+			expected_kind = eitr.Command_Kind.Help,
+			err = .None,
+		},
+		MockCommandByNames {
+			command = "iNIt",
+			expected_kind = eitr.Command_Kind.Init,
+			err = .None,
+		},
+	}
 
-	// Directory
-	valid_dir, vdo_err := eitr.find_arg("-d")
-	testing.expect(t, valid_dir == eitr.Arguments.Scope_Directory)
-	testing.expect(t, vdo_err == eitr.Eitr_Errors.None)
+	for c in commands {
+		actual_cmd, err := eitr.command_by_name(c.command)
 
-	valid_dir_two, vdt_err := eitr.find_arg("--directory")
-	testing.expect(t, valid_dir_two == eitr.Arguments.Scope_Directory)
-	testing.expect(t, vdt_err == eitr.Eitr_Errors.None)
-
-	// Profile
-	valid_profile, vpo_err := eitr.find_arg("-p")
-	testing.expect(t, valid_profile == eitr.Arguments.Profile)
-	testing.expect(t, vpo_err == eitr.Eitr_Errors.None)
-
-	valid_profile_two, vpt_err := eitr.find_arg("--profile")
-	testing.expect(t, valid_profile_two == eitr.Arguments.Profile)
-	testing.expect(t, vpt_err == eitr.Eitr_Errors.None)
+		testing.expect_value(t, actual_cmd, c.expected_kind)
+		testing.expect(t, err == c.err)
+	}
 
 }

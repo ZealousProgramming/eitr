@@ -28,9 +28,11 @@ import "core:c/libc"
 import "core:fmt"
 import "core:os"
 
-VERSION_MAJOR := 1
-VERSION_MINOR := 1
-VERSION_PATCH := 0
+VERSION_MAJOR :: 0
+VERSION_MINOR :: 1
+VERSION_PATCH :: 0
+
+VERBOSE := false
 
 Eitr_Errors :: enum {
 	None,
@@ -44,12 +46,15 @@ Eitr_Errors :: enum {
 }
 
 main :: proc() {
-	fmt.println("[eitr] Provided arguments: ")
-
 	args: []string = os.args
+	VERBOSE = contains_arg(args, .Verbose, false)
 
-	for arg in args {
-		fmt.println(arg)
+
+	if (VERBOSE) {
+		fmt.println("[eitr] Args provided: ")
+		for arg in args {
+			fmt.println("\t- ", arg)
+		}
 	}
 
 
