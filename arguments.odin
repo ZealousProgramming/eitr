@@ -1,7 +1,7 @@
 package eitr
 
 import "core:fmt"
-import "core:strings"
+// import "core:strings"
 
 // odinfmt: disable
 Arguments :: enum {

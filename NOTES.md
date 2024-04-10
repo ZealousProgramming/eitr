@@ -18,7 +18,7 @@ How do I want to use it?
     - `init`: Setup directory with the `eitr.json` in the cwd. This will replace `odin-init`.
         - `-c {PATH}/some-config.json`: Initialize the directory with that configuration.
     - `config`: Configuration commands
-        - `-print`: Prints the configuration for that cwd, defaults to the global.
+        - `-o`: Prints the configuration for that cwd, defaults to the global.
         - `-set {PATH}`: Sets global config to the config file at the provided path
         - `-set {PATH} -cwd`: Sets the cwd's config file. Any `eitr` commands ran after will use the cached configuration file if it's called in this cwd.
 
