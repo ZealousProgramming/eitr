@@ -47,8 +47,12 @@ Eitr_Errors :: enum {
 
 main :: proc() {
 	args: []string = os.args
-	VERBOSE = contains_arg(args, .Verbose, false)
+	if len(args) <= 1 {
+		fmt.eprintln("[eitr] Command required")
+		os.exit(-1)
+	}
 
+	VERBOSE = contains_arg(args, .Verbose, false)
 
 	if (VERBOSE) {
 		fmt.println("[eitr] Args provided: ")
@@ -57,10 +61,21 @@ main :: proc() {
 		}
 	}
 
+	cmds: [dynamic]^Command = make([dynamic]^Command)
+	defer delete(cmds)
+
+	parse_err := parse_command(args, &cmds)
+	if parse_err != .None {
+		// TODO(devon): Provide better error message
+		// Should include where in the command it failed
+		fmt.eprintf("[eitr] Failed to parse command: %s\n", parse_err)
+
+		os.exit(-1)
+	}
 
 }
 
-execute_command :: proc(cmd: string) {
+execute :: proc(cmd: string) {
 	ret := libc.system("odin build -help")
 	if ret != 0 {
 		fmt.eprintf(

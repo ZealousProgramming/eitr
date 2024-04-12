@@ -5,23 +5,143 @@ import "core:testing"
 import "../"
 
 @(test)
-test_command_kind :: proc(t: ^testing.T) {
-	testing.expect(t, eitr.command_matches("help", eitr.Command_Kind.Help))
-	testing.expect(t, eitr.command_matches("HELP", eitr.Command_Kind.Help))
-	testing.expect_value(
-		t,
-		eitr.command_matches("halp", eitr.Command_Kind.Help),
-		false,
-	)
-	testing.expect_value(
-		t,
-		eitr.command_matches("run", eitr.Command_Kind.Help),
-		false,
-	)
+test_parse_command :: proc(t: ^testing.T) {
+	MockParseCommand :: struct {
+		command:  []string,
+		expected: eitr.Eitr_Errors,
+	}
 
-	testing.expect(t, eitr.command_matches("init", eitr.Command_Kind.Init))
-	testing.expect(t, eitr.command_matches("config", eitr.Command_Kind.Config))
-	testing.expect(t, eitr.command_matches("run", eitr.Command_Kind.Run))
+	commands := []MockParseCommand {
+		// --- Failure
+		MockParseCommand {
+			command = []string{"C:\\programming\\odin\\eitr\\bin\\eitr.exe"},
+			expected = .Command_Not_Found,
+		},
+		MockParseCommand {
+			command = []string {
+				"C:\\programming\\odin\\eitr\\bin\\eitr.exe",
+				"build",
+				"-v",
+			},
+			expected = .Command_Not_Found,
+		},
+		MockParseCommand {
+			command = []string {
+				"C:\\programming\\odin\\eitr\\bin\\eitr.exe",
+				"BUILD",
+				"-v",
+			},
+			expected = .Command_Not_Found,
+		},
+		// --- Success
+		MockParseCommand {
+			command = []string {
+				"C:\\programming\\odin\\eitr\\bin\\eitr.exe",
+				"help",
+			},
+			expected = .None,
+		},
+		MockParseCommand {
+			command = []string {
+				"C:\\programming\\odin\\eitr\\bin\\eitr.exe",
+				"init",
+			},
+			expected = .None,
+		},
+		MockParseCommand {
+			command = []string {
+				"C:\\programming\\odin\\eitr\\bin\\eitr.exe",
+				"config",
+			},
+			expected = .None,
+		},
+		MockParseCommand {
+			command = []string {
+				"C:\\programming\\odin\\eitr\\bin\\eitr.exe",
+				"config",
+				"-s",
+			},
+			expected = .None,
+		},
+		MockParseCommand {
+			command = []string {
+				"C:\\programming\\odin\\eitr\\bin\\eitr.exe",
+				"run",
+			},
+			expected = .None,
+		},
+	}
+
+	cmds := make([dynamic]eitr.Command)
+	defer delete(cmds)
+
+	for cmd in commands {
+		testing.expect_value(
+			t,
+			eitr.parse_command(cmd.command, &cmds, context.temp_allocator),
+			cmd.expected,
+		)
+	}
+}
+
+@(test)
+test_command_kind :: proc(t: ^testing.T) {
+	MockCommandMatches :: struct {
+		command:  string,
+		kind:     eitr.Command_Kind,
+		expected: bool,
+	}
+
+	commands := []MockCommandMatches {
+		MockCommandMatches {
+			command = "help",
+			kind = eitr.Command_Kind.Help,
+			expected = true,
+		},
+		MockCommandMatches {
+			command = "HELP",
+			kind = eitr.Command_Kind.Help,
+			expected = true,
+		},
+		MockCommandMatches {
+			command = "HelP",
+			kind = eitr.Command_Kind.Help,
+			expected = true,
+		},
+		MockCommandMatches {
+			command = "halp",
+			kind = eitr.Command_Kind.Help,
+			expected = false,
+		},
+		MockCommandMatches {
+			command = "run",
+			kind = eitr.Command_Kind.Help,
+			expected = false,
+		},
+		MockCommandMatches {
+			command = "run",
+			kind = eitr.Command_Kind.Run,
+			expected = true,
+		},
+		MockCommandMatches {
+			command = "init",
+			kind = eitr.Command_Kind.Init,
+			expected = true,
+		},
+		MockCommandMatches {
+			command = "config",
+			kind = eitr.Command_Kind.Config,
+			expected = true,
+		},
+	}
+
+	for c in commands {
+		testing.expect_value(
+			t,
+			eitr.command_matches(c.command, c.kind),
+			c.expected,
+		)
+	}
 }
 
 @(test)
@@ -150,12 +270,48 @@ test_argument_kind :: proc(t: ^testing.T) {
 
 @(test)
 test_contains_arg :: proc(t: ^testing.T) {
-	// Verbose Run
-	args_verbose_run := []string{"eitr.exe", "run", "-v"}
-	testing.expect(
-		t,
-		eitr.contains_arg(args_verbose_run, eitr.Argument_Kind.Verbose),
-	)
+	MockContainsArg :: struct {
+		args:     []string,
+		kind:     eitr.Argument_Kind,
+		expected: bool,
+	}
+
+	args := []MockContainsArg {
+		MockContainsArg {
+			args = []string{"eitr.exe", "run", "-z"},
+			kind = eitr.Argument_Kind.Verbose,
+			expected = false,
+		},
+		MockContainsArg {
+			args = []string{"eitr.exe", "run", "--Halp"},
+			kind = eitr.Argument_Kind.Command_Help,
+			expected = false,
+		},
+		MockContainsArg {
+			args = []string{"eitr.exe", "run", "-v"},
+			kind = eitr.Argument_Kind.Verbose,
+			expected = true,
+		},
+		MockContainsArg {
+			args = []string{"eitr.exe", "run", "--help"},
+			kind = eitr.Argument_Kind.Command_Help,
+			expected = true,
+		},
+		MockContainsArg {
+			args = []string{"eitr.exe", "run", "-v", "--output"},
+			kind = eitr.Argument_Kind.Output,
+			expected = true,
+		},
+		MockContainsArg {
+			args = []string{"eitr.exe", "run", "--profile"},
+			kind = eitr.Argument_Kind.Profile,
+			expected = true,
+		},
+	}
+
+	for a in args {
+		testing.expect_value(t, eitr.contains_arg(a.args, a.kind), a.expected)
+	}
 }
 
 @(test)
