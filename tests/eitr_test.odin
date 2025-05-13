@@ -72,7 +72,7 @@ test_parse_command :: proc(t: ^testing.T) {
 		},
 	}
 
-	cmds := make([dynamic]eitr.Command)
+	cmds := make([dynamic]^eitr.Command)
 	defer delete(cmds)
 
 	for cmd in commands {
@@ -271,9 +271,10 @@ test_argument_kind :: proc(t: ^testing.T) {
 @(test)
 test_contains_arg :: proc(t: ^testing.T) {
 	MockContainsArg :: struct {
-		args:     []string,
-		kind:     eitr.Argument_Kind,
-		expected: bool,
+		args:           []string,
+		kind:           eitr.Argument_Kind,
+		expected:       bool,
+		expected_index: int,
 	}
 
 	args := []MockContainsArg {
@@ -281,36 +282,44 @@ test_contains_arg :: proc(t: ^testing.T) {
 			args = []string{"eitr.exe", "run", "-z"},
 			kind = eitr.Argument_Kind.Verbose,
 			expected = false,
+			expected_index = -1,
 		},
 		MockContainsArg {
 			args = []string{"eitr.exe", "run", "--Halp"},
 			kind = eitr.Argument_Kind.Command_Help,
 			expected = false,
+			expected_index = -1,
 		},
 		MockContainsArg {
 			args = []string{"eitr.exe", "run", "-v"},
 			kind = eitr.Argument_Kind.Verbose,
 			expected = true,
+			expected_index = 2,
 		},
 		MockContainsArg {
 			args = []string{"eitr.exe", "run", "--help"},
 			kind = eitr.Argument_Kind.Command_Help,
 			expected = true,
+			expected_index = 2,
 		},
 		MockContainsArg {
 			args = []string{"eitr.exe", "run", "-v", "--output"},
 			kind = eitr.Argument_Kind.Output,
 			expected = true,
+			expected_index = 3,
 		},
 		MockContainsArg {
 			args = []string{"eitr.exe", "run", "--profile"},
 			kind = eitr.Argument_Kind.Profile,
 			expected = true,
+			expected_index = 2,
 		},
 	}
 
 	for a in args {
-		testing.expect_value(t, eitr.contains_arg(a.args, a.kind), a.expected)
+		found_arg, arg_idx := eitr.contains_arg(a.args, a.kind)
+		testing.expect_value(t, found_arg, a.expected)
+		testing.expect_value(t, arg_idx, a.expected_index)
 	}
 }
 

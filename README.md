@@ -1,6 +1,8 @@
 # eitr
 Eitr
 
+Only usable if you're lazy. Otherwise write `.sh` and `.bat` that handles the same thing.
+
 ## TODOs:
 - Commands:
     - [ ] `help`

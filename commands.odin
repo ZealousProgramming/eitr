@@ -1,6 +1,6 @@
 package eitr
 
-import "core:fmt"
+import "core:log"
 import "core:strings"
 
 Command_Kind :: enum {
@@ -117,12 +117,9 @@ parse_command :: proc(
 ) -> Eitr_Errors {
 
 	if len(args) <= 1 {
-		fmt.eprintln("[eitr] Command not found")
+		log.error("[eitr] Command not found")
 		return .Command_Not_Found
 	}
-
-	// Skip the .exe arg
-	// idx := 1
 
 	cmd, err := find_command(args)
 	if err != .None {
@@ -131,24 +128,49 @@ parse_command :: proc(
 
 	switch cmd {
 	case .Help:
-		fmt.println("[eitr] Found \"Help\" command")
+		log.debug("[eitr] Found \"Help\" command")
 		help := new(Help_Command, allocator)
 
 		append(commands, cast(^Command)help)
 	case .Init:
-		fmt.println("[eitr] Found \"Init\" command")
+		log.debug("[eitr] Found \"Init\" command")
 		init := new(Init_Command, allocator)
 
 		append(commands, cast(^Command)init)
 	case .Config:
-		fmt.println("[eitr] Found \"Config\" command")
+		log.debug("[eitr] Found \"Config\" command")
 
 		config := new(Config_Command, allocator)
 
 		append(commands, cast(^Command)config)
 	case .Run:
-		fmt.println("[eitr] Found \"Run\" command")
+		log.debug("[eitr] Found \"Run\" command")
 		run := new(Run_Command, allocator)
+
+		profile_provided, profile_idx := contains_arg(args, .Profile, false)
+
+		// Run the set default profile if not
+		if profile_provided {
+			if len(args) - 1 <= profile_idx {
+				// No profile specified
+				log.error("No input found for \"-p / --profle\"\n")
+				return .Missing_Input
+			}
+
+			profile := args[profile_idx + 1]
+			_, find_err := find_arg(profile, false)
+			if find_err != .Unknown_Argument {
+				log.errorf("%s is not valid input to -p/--profle\n", profile)
+				return .Missing_Input
+			}
+
+			// TODO(devon): Check to see if it's a valid profile in eitr.json
+
+			run.profile = profile
+			log.debugf("Found profile: %v\n", run.profile)
+		}
+
+		// 
 
 		append(commands, cast(^Command)run)
 	case .Invalid:

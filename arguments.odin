@@ -20,15 +20,18 @@ contains_arg :: proc(
 	args: []string,
 	arg: Argument_Kind,
 	log_invalid := true,
-) -> bool {
-	for a in args {
+) -> (
+	found: bool,
+	index: int,
+) {
+	for a, idx in args {
 		actual_value, err := find_arg(a, log_invalid)
 
 		if err == .Unknown_Argument {continue}
-		if actual_value == arg {return true}
+		if actual_value == arg {return true, idx}
 	}
 
-	return false
+	return false, -1
 }
 
 find_arg :: proc(

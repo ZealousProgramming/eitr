@@ -1,0 +1,29 @@
+{
+    "version": "0.0.1",
+    "default-profile": "debug",
+    "profiles": [
+        {
+            "name": "debug",
+            "flags": [
+                "-debug",
+                "-vet",
+                "-strict-style",
+                "-show-timings"
+            ],
+            "outputPath": "./bin/",
+            "defines": [
+                {
+                    "HOG_DEBUG": "true"
+                },
+                {
+                    "HOG_LOG_LEVEL": "info"
+                }
+            ],
+            "collections": [
+                {
+                    "hogwash": "./src/hogwash"
+                }
+            ]
+        }
+    ]
+}

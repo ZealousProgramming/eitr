@@ -1,0 +1,32 @@
+{
+    "version": "0.0.1",
+    "default-profile": "eitr",
+    "profiles": [
+        {
+            "name": "debug",
+            "command": "run",
+            "mainPath": ".",
+            "outputPath": "./bin/eitr.exe",
+            "flags": [
+                "-file",
+                "-debug",
+                "-vet",
+                "-strict-style",
+                "-show-timings"
+            ],
+            "defines": [
+                {
+                    "HOG_DEBUG": "true"
+                },
+                {
+                    "HOG_LOG_LEVEL": "info"
+                }
+            ],
+            "collections": [
+                {
+                    "hogwash": "./src/hogwash"
+                }
+            ]
+        }
+    ]
+}

@@ -25,7 +25,7 @@
 package eitr
 
 import "core:c/libc"
-import "core:fmt"
+import "core:log"
 import "core:os"
 
 VERSION_MAJOR :: 0
@@ -33,6 +33,8 @@ VERSION_MINOR :: 1
 VERSION_PATCH :: 0
 
 VERBOSE := false
+DEBUG := ODIN_DEBUG
+LOG_LEVEL := log.Level.Warning
 
 Eitr_Errors :: enum {
 	None,
@@ -43,22 +45,32 @@ Eitr_Errors :: enum {
 	Unknown_Argument,
 	Missing_Input,
 	Empty_Input,
+	Configuration_Already_Exists,
+	IO_Error,
 }
+
 
 main :: proc() {
 	args: []string = os.args
 	if len(args) <= 1 {
-		fmt.eprintln("[eitr] Command required")
+		log.errorf("Command required")
 		os.exit(-1)
 	}
 
-	VERBOSE = contains_arg(args, .Verbose, false)
+	VERBOSE, _ = contains_arg(args, .Verbose, false)
 
 	if (VERBOSE) {
-		fmt.println("[eitr] Args provided: ")
-		for arg in args {
-			fmt.println("\t- ", arg)
-		}
+		LOG_LEVEL = log.Level.Info
+	}
+	if (DEBUG) {
+		LOG_LEVEL = log.Level.Debug
+	}
+
+	context.logger = log.create_console_logger(LOG_LEVEL)
+
+	log.debug("Arguments provided: ")
+	for arg in args {
+		log.debugf("--- %v\n", arg)
 	}
 
 	cmds: [dynamic]^Command = make([dynamic]^Command)
@@ -68,7 +80,7 @@ main :: proc() {
 	if parse_err != .None {
 		// TODO(devon): Provide better error message
 		// Should include where in the command it failed
-		fmt.eprintf("[eitr] Failed to parse command: %s\n", parse_err)
+		log.errorf("Failed to parse command: %s\n", parse_err)
 
 		os.exit(-1)
 	}
@@ -78,9 +90,6 @@ main :: proc() {
 execute :: proc(cmd: string) {
 	ret := libc.system("odin build -help")
 	if ret != 0 {
-		fmt.eprintf(
-			"[eitr] Error occured running \"odin build -help\": %v\n",
-			ret,
-		)
+		log.errorf("Failed to run \"odin build -help\": %v\n", ret)
 	}
 }
